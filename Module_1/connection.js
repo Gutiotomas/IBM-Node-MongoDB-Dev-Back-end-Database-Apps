@@ -1,9 +1,13 @@
+require('dotenv').config();
 // Import the MongoDB client
 const { MongoClient } = require('mongodb');
 
+const username = process.env.DB_USERNAME;
+const password = process.env.DB_PASSWORD;
+const name = process.env.DB_NAME;
 // Replace the URL with your actual MongoDB connection string
-const url = 'mongodb://localhost:27017'; // Or your MongoDB Atlas connection string
-const dbName = 'yourDatabaseName';
+const url = 'mongodb+srv://${username}:${password}@db1.8qhzp.mongodb.net/'; // Or your MongoDB Atlas connection string
+const dbName = name;
 
 async function connectToMongoDB() {
   // Create a new MongoClient
