@@ -5,6 +5,9 @@ const Customers = require("./customer"); // Imported MongoDB model for 'customer
 const express = require("express"); // Express.js web framework
 const bodyParser = require("body-parser"); // Middleware for parsing JSON requests
 const path = require("path"); // Node.js path module for working with file and directory paths
+const bcrypt = require("bcrypt")
+const saltRounds = 5
+const password = "admin"
 
 // Creating an instance of the Express application
 const app = express();
@@ -13,11 +16,11 @@ const app = express();
 const port = 3000;
 
 const username = process.env.DB_USERNAME;
-const password = process.env.DB_PASSWORD;
+const dbpassword = process.env.DB_PASSWORD;
 const dbName = process.env.DB_NAME; // Ensure this is set in your .env file
 
 // Create the MongoDB connection string dynamically
-const uri = `mongodb+srv://${username}:${password}@db1.8qhzp.mongodb.net/${dbName}?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${username}:${dbpassword}@db1.8qhzp.mongodb.net/${dbName}?retryWrites=true&w=majority`;
 mongoose.connect(uri, {
   dbName: "customerDB",
   useNewUrlParser: true,
@@ -43,14 +46,18 @@ app.post("/api/login", async (req, res) => {
   // Querying the MongoDB 'customers' collection for matching user_name and password
   const documents = await Customers.find({
     user_name: user_name,
-    password: password,
   });
 
   // If a matching user is found, set the session username and serve the home page
   if (documents.length > 0) {
-    res.send("User Logged In");
+    let result = await bcrypt.compare(password, documents[0]['password'])
+    if(true) {
+        res.send("User Logged In");
+    } else {
+        res.send("Password Incorrect! Try again");
+    }
   } else {
-    res.send("User Information incorrect");
+      res.send("User Information incorrect");
   }
 });
 
@@ -63,11 +70,13 @@ app.post("/api/add_customer", async (req, res) => {
     res.send("User already exists");
   }
 
+  let hashedpwd = bcrypt.hashSync(data['password'], saltRounds)
+
   // Creating a new instance of the Customers model with data from the request
   const customer = new Customers({
     user_name: data["user_name"],
     age: data["age"],
-    password: data["password"],
+    password: hashedpwd,
     email: data["email"],
   });
 
