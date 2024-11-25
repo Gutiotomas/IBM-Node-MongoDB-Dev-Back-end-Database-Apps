@@ -62,7 +62,7 @@ app.post("/api/login", async (req, res) => {
   // If a matching user is found, set the session username and serve the home page
   if (documents.length > 0) {
     let result = await bcrypt.compare(password, documents[0]['password'])
-    if(true) {
+    if(result) {
         const genidValue = req.sessionID;
         res.cookie('username', user_name);
         res.sendFile(path.join(__dirname, 'frontend', 'home.html'));
