@@ -1,24 +1,14 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
-const Schema = mongoose.Schema;
-
-const employees = new Schema({
-  emp_name: {
-    type: String,
-    required: true
-  },
-  age: {
-    type: Number,
-    required: true,
-  },
-  location: {
-    type: String,
-    required: true
-  },
-  email: {
-    type: String,
-    required: true
-  }
+// Define the Employee schema
+const employeeSchema = new mongoose.Schema({
+  emp_name: String,
+  age: Number,
+  location: String,
+  email: String
 }, { versionKey: false }); // Exclude the __v field
 
-export default mongoose.model('employees', employees);
+// Create the Employee model
+const Employee = mongoose.model('Employee', employeeSchema);
+
+module.exports = Employee;
