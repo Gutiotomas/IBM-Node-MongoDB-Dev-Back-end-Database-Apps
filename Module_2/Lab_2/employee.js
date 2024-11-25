@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const Schema = mongoose.Schema;
 
@@ -19,6 +19,6 @@ const employees = new Schema({
     type: String,
     required: true
   }
-});
+}, { versionKey: false }); // Exclude the __v field
 
-module.exports = mongoose.model('employees', employees);
+export default mongoose.model('employees', employees);
