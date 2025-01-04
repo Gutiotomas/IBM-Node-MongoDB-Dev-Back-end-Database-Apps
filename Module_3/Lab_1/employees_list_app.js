@@ -3,9 +3,12 @@ const mongoose = require('mongoose');
 const Employees = require('./employee');
 
 const express = require('express');
+const cors = require('cors');
 const bodyParser = require('body-parser');
 
 const app = express();
+// Enable CORS for all routes
+app.use(cors());
 const port = 3000;
 
 // Access the username and password from the .env file
