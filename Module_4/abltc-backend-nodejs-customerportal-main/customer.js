@@ -27,6 +27,10 @@ const customersSchema = new Schema(
       type: Number, // Data type is Number.
       required: true, // The field is required and must have a value.
     },
+    name: {
+      type: String,
+      required: true,
+    },
   },
   { versionKey: false }
 );
