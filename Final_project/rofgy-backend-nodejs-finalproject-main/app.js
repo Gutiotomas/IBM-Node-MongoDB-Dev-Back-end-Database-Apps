@@ -92,6 +92,24 @@ app.post('/register', async (req, res) => {
 
 // Insert your user login code here.
 
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+  
+    try {
+      const user = await User.findOne({ username, password });
+  
+      if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+  
+      const token = jwt.sign({ userId: user._id, username: user.username }, SECRET_KEY, { expiresIn: '1h' });
+      req.session.token = token;
+  
+      res.redirect({"mesage":`${user.username} has logged in`});
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Internal Server Error' });
+    }
+  });
+
 // Insert your post creation code here.
 
 // Insert your post updation code here.
