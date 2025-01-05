@@ -112,6 +112,17 @@ app.post('/login', async (req, res) => {
 
 // Insert your post creation code here.
 
+app.post('/posts', authenticateJWT, (req, res) => {
+    const { text } = req.body;
+  
+    if (!text || typeof text !== 'string') return res.status(400).json({ message: 'Please provide valid post content' });
+  
+    const newPost = { userId: req.user.userId, text };
+    posts.push(newPost);
+  
+    res.status(201).json({ message: 'Post created successfully' });
+  });
+
 // Insert your post updation code here.
 
 // Insert your post deletion code here.
