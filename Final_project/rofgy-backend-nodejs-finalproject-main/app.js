@@ -140,6 +140,18 @@ app.put('/posts/:postId', authenticateJWT, (req, res) => {
 
 // Insert your post deletion code here.
 
+app.delete('/posts/:postId', authenticateJWT, (req, res) => {
+    const postId = parseInt(req.params.postId);
+  
+    const postIndex = posts.findIndex((post) => post.id === postId && post.userId === req.user.userId);
+  
+    if (postIndex === -1) return res.status(404).json({ message: 'Post not found' });
+  
+    const deletedPost = posts.splice(postIndex, 1)[0];
+  
+    res.json({ message: 'Post deleted successfully', deletedPost });
+  });
+
 // Insert your user logout code here.
 
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
