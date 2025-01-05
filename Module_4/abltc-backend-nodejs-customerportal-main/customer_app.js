@@ -7,6 +7,7 @@ const path = require('path');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
+const { ValidationError, InvalidUserError, AuthenticationFailed } = require('./errors/CustomError');
 
 const saltRounds = 5;
 const secretKey = 'your-secret-key';  // Replace with a secure secret key
@@ -56,57 +57,61 @@ mongoose.connect(uri, {
         });
     })
 
-    
-
-    // POST endpoint for user login with JWT authentication
-    app.post('/api/login', async (req, res) => {
+    // POST endpoint for user login
+    app.post('/api/login', async (req, res, next) => {
         const data = req.body;
-        console.log(data);
-    
         const user_name = data['user_name'];
         const password = data['password'];
     
-        const user = usersdic[user_name];
-        if (!user || !(await bcrypt.compare(password, user.hashedpwd))) {
-            res.status(401).send('User Information incorrect');
-            return;
+        try {
+            const user = await Customers.findOne({ user_name: user_name });
+            if (!user) {
+                throw new InvalidUserError("No such user in database");
+            }
+            if (user.password !== password) {
+                throw new AuthenticationFailed("Passwords don't match");
+            }
+            res.send("User Logged In");
+        } catch (error) {
+            next(error);
         }
-    
-        // No need to print details to the terminal, just send a success message
-        res.status(200).send('Login successfully');
     });
     
     // POST endpoint for adding a new customer with JWT authentication
-    app.post('/api/add_customer', async (req, res) => {
+    // POST endpoint for adding a new customer
+    app.post('/api/add_customer', async (req, res, next) => {
         const data = req.body;
-        console.log(data);
+        const age = parseInt(data['age']);
     
-        const documents = await Customers.find({ user_name: data['user_name'] });
-        if (documents.length > 0) {
-            res.status(409).send('User already exists');
-            return;
+        try {
+            if (age < 21) {
+                throw new ValidationError("Customer Under required age limit");
+            }
+    
+            const customer = new Customers({
+                "user_name": data['user_name'],
+                "age": age,
+                "password": data['password'],
+                "email": data['email']
+            });
+    
+            await customer.save();
+    
+            res.send("Customer added successfully");
+        } catch (error) {
+            next(error);
         }
-    
-        const hashedpwd = await bcrypt.hash(data['password'], saltRounds);
-        usersdic[data['user_name']] = { hashedpwd };
-    
-        // Creating a new instance of the Customers model with data from the request
-        const customer = new Customers({
-            user_name: data['user_name'],
-            age: data['age'],
-            password: hashedpwd,
-            email: data['email'],
-        });
-    
-        // Saving the new customer to the MongoDB 'customers' collection
-        await customer.save();
-    
-        res.status(201).send('Customer added successfully');
     });
     
     // GET endpoint for the root URL, serving the home page
     app.get('/', async (req, res) => {
         res.sendFile(path.join(__dirname, 'frontend', 'home.html'));
+    });
+
+    // GET endpoint for user logout
+    app.get('/api/logout', async (req, res) => {
+        res.cookie('username', '', { expires: new Date(0) });
+        res.redirect('/');
     });
 
     app.all("*",(req,res,next)=>{
