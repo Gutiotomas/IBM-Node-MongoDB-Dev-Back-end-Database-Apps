@@ -8,6 +8,7 @@ const validate = (e)=>{
   let password = document.getElementById("password").value;
   let age = document.getElementById("age").value;
   let email = document.getElementById("email").value;
+  let name = document.getElementById("name").value;
   if(user_name === "" || password === "" || age === "" || email === "") {
     alert("Please ensure all the required values are entered.");
     return false;
@@ -34,6 +35,10 @@ const validate = (e)=>{
     <div class="form-group">
     <label for="email" style="color: white;font-weight: bolder;">Email</label>
     <input type="email" class="form-control" name="email" id="email" aria-describedby="email" placeholder="Enter Email">
+    </div>
+    <div class="form-group">
+    <label for="name" style="color: white;font-weight: bolder;">Name</label>
+    <input type="text" class="form-control" name="name" id="name" aria-describedby="name" placeholder="Enter Name">
     </div>
         <div style="display:flex;flex-direction:row;justify-content: center;margin:auto">
       <button style="margin: top 100px;background-color:  rgb(64, 57, 64);" type="submit" class="btn btn-primary">Register</button>
