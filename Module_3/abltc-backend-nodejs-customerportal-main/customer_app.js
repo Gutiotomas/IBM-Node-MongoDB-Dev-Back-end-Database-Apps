@@ -5,7 +5,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');  // Added JWT library
+const jwt = require('jsonwebtoken');
 const cors = require('cors');
 
 const saltRounds = 5;
@@ -20,6 +20,9 @@ app.use(cors());
 // Middleware to parse JSON requests
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// Serving static files from the 'frontend' directory under the '/static' route
+app.use('/static', express.static(path.join('.', 'frontend')));
 
 // Setting the port number for the server
 const port = 3000;
@@ -41,33 +44,76 @@ mongoose.connect(uri, {
   .then(() => {
     console.log("Connected to MongoDB");
 
-    // POST endpoint for user login
-    app.post("/api/login", async (req, res) => {
+    // POST endpoint for user login with JWT authentication
+    app.post('/api/login', async (req, res) => {
       const data = req.body;
       console.log(data);
-      let user_name = data["user_name"];
-      let password = data["password"];
 
-      // Querying the MongoDB 'customers' collection for matching user_name and password
-      const documents = await Customers.find({
-        user_name: user_name,
+      const user_name = data['user_name'];
+      const password = data['password'];
+
+      const documents = await Customers.find({ user_name: user_name });
+
+      if (documents.length === 0 || !(await bcrypt.compare(password, documents[0].password))) {
+        res.status(401).send('User Information incorrect');
+        return;
+      }
+
+      const token = jwt.sign({ user_name: user_name }, secretKey, { expiresIn: '1h' });
+      console.log('Generated token:', token); // Log the full token
+      res.status(200).json({ token });
+    });
+
+    // POST endpoint for adding a new customer with JWT authentication
+    app.post('/api/add_customer', authenticateToken, async (req, res) => {
+      const data = req.body;
+      console.log(data);
+
+      const documents = await Customers.find({ user_name: data['user_name'] });
+      if (documents.length > 0) {
+        res.status(409).send('User already exists');
+        return;
+      }
+
+      const hashedpwd = await bcrypt.hash(data['password'], saltRounds);
+
+      // Creating a new instance of the Customers model with data from the request
+      const customer = new Customers({
+        user_name: data['user_name'],
+        age: data['age'],
+        password: hashedpwd,
+        email: data['email'],
       });
 
-      // If a matching user is found, set the session username and serve the home page
-      if (documents.length > 0) {
-        let result = await bcrypt.compare(password, documents[0]['password']);
-        if (result) {
-          const token = jwt.sign({ user_name: user_name }, secretKey, { expiresIn: '1h' });
-          console.log('Generated token:', token); // Log the full token
-          res.cookie('username', user_name);
-          res.sendFile(path.join(__dirname, 'frontend', 'home.html'));
-        } else {
-          res.send("Password Incorrect! Try again");
-        }
-      } else {
-        res.send("User Information incorrect");
-      }
+      // Saving the new customer to the MongoDB 'customers' collection
+      await customer.save();
+
+      res.status(201).send('Customer added successfully');
     });
+
+    // GET endpoint for the root URL, serving the home page
+    app.get('/', async (req, res) => {
+      res.sendFile(path.join(__dirname, 'frontend', 'home.html'));
+    });
+
+    // Function to authenticate JWT token
+    function authenticateToken(req, res, next) {
+      const authHeader = req.headers['authorization'];
+      const token = authHeader && authHeader.split(' ')[1];
+
+      if (!token) {
+        return res.sendStatus(401);
+      }
+
+      jwt.verify(token, secretKey, (err, user) => {
+        if (err) {
+          return res.sendStatus(403);
+        }
+
+        req.user = user;
+        next();
+      });
+    }
 
     // Start the server
     app.listen(port, () => {
