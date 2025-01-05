@@ -82,17 +82,23 @@ mongoose.connect(uri, {
     app.post('/api/add_customer', async (req, res, next) => {
         const data = req.body;
         const age = parseInt(data['age']);
+        const name = data['name'];
     
         try {
             if (age < 21) {
                 throw new ValidationError("Customer Under required age limit");
+            }
+
+            if (!/^[a-zA-Z\s]+$/.test(name)) {
+                throw new ValidationError("Name is Invalid");
             }
     
             const customer = new Customers({
                 "user_name": data['user_name'],
                 "age": age,
                 "password": data['password'],
-                "email": data['email']
+                "email": data['email'],
+                "name": name
             });
     
             await customer.save();
