@@ -29,6 +29,20 @@ app.use(session({ secret: SECRET_KEY, resave: false, saveUninitialized: true, co
 
 // Insert your authenticateJWT Function code here.
 
+function authenticateJWT(req, res, next) {
+    const token = req.session.token;
+  
+    if (!token) return res.status(401).json({ message: 'Unauthorized' });
+  
+    try {
+      const decoded = jwt.verify(token, SECRET_KEY);
+      req.user = decoded;
+      next();
+    } catch (error) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+  }
+  
 // Insert your requireAuth Function code here.
 
 // Insert your routing HTML code here.
