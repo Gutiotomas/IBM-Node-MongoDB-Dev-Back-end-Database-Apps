@@ -1,3 +1,4 @@
+require ('dotenv').config();
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const session = require('express-session');
@@ -6,12 +7,17 @@ const mongoose = require('mongoose');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const SECRET_KEY = 'your_secret_key';
+const SECRET_KEY = process.env.SECRET_KEY;
 
 mongoose.set('strictQuery', false);
 
-const uri =  "mongodb://root:<replace password>@localhost:27017";
-mongoose.connect(uri,{'dbName':'SocialDB'});
+const username = process.env.DB_USERNAME;
+const password = process.env.DB_PASSWORD;
+const dbName = process.env.DB_NAME; // Ensure this is set in your .env file
+
+// Create the MongoDB connection string dynamically
+const uri = `mongodb+srv://${username}:${password}@db1.8qhzp.mongodb.net/${dbName}?retryWrites=true&w=majority`;
+mongoose.connect(uri,{dbName:'SocialDB', useNewUrlParser: true, useUnifiedTopology: true });
 
 const User = mongoose.model('User', { username: String, email: String, password: String });
 const Post = mongoose.model('Post', { userId: mongoose.Schema.Types.ObjectId, text: String });
