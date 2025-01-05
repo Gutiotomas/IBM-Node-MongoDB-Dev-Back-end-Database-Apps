@@ -69,6 +69,27 @@ app.get('/index', requireAuth, (req, res) => res.sendFile(path.join(__dirname, '
 
 // Insert your user registration code here.
 
+app.post('/register', async (req, res) => {
+    const { username, email, password } = req.body;
+  
+    try {
+      const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+  
+      if (existingUser) return res.status(400).json({ message: 'User already exists' });
+  
+      const newUser = new User({ username, email, password });
+      await newUser.save();
+  
+      const token = jwt.sign({ userId: newUser._id, username: newUser.username }, SECRET_KEY, { expiresIn: '1h' });
+      req.session.token = token;
+  
+      res.send({"message":`The user ${username}has been added`});
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Internal Server Error' });
+    }
+  });
+
 // Insert your user login code here.
 
 // Insert your post creation code here.
