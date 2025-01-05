@@ -11,6 +11,8 @@ const cors = require('cors');
 const saltRounds = 5;
 const secretKey = 'your-secret-key';  // Replace with a secure secret key
 
+let usersdic = {};  
+
 // Creating an instance of the Express application
 const app = express();
 
@@ -18,7 +20,7 @@ const app = express();
 app.use(cors());
 
 // Middleware to parse JSON requests
-app.use(bodyParser.json());
+app.use('*',bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Serving static files from the 'frontend' directory under the '/static' route
@@ -46,78 +48,78 @@ mongoose.connect(uri, {
 
     // POST endpoint for user login with JWT authentication
     app.post('/api/login', async (req, res) => {
-      const data = req.body;
-      console.log(data);
-
-      const user_name = data['user_name'];
-      const password = data['password'];
-
-      const documents = await Customers.find({ user_name: user_name });
-
-      if (documents.length === 0 || !(await bcrypt.compare(password, documents[0].password))) {
-        res.status(401).send('User Information incorrect');
-        return;
-      }
-
-      const token = jwt.sign({ user_name: user_name }, secretKey, { expiresIn: '1h' });
-      console.log('Generated token:', token); // Log the full token
-      res.status(200).json({ token });
+        const data = req.body;
+        console.log(data);
+    
+        const user_name = data['user_name'];
+        const password = data['password'];
+    
+        const user = usersdic[user_name];
+        if (!user || !(await bcrypt.compare(password, user.hashedpwd))) {
+            res.status(401).send('User Information incorrect');
+            return;
+        }
+    
+        // No need to print details to the terminal, just send a success message
+        res.status(200).send('Login successfully');
     });
-
+    
     // POST endpoint for adding a new customer with JWT authentication
-    app.post('/api/add_customer', authenticateToken, async (req, res) => {
-      const data = req.body;
-      console.log(data);
-
-      const documents = await Customers.find({ user_name: data['user_name'] });
-      if (documents.length > 0) {
-        res.status(409).send('User already exists');
-        return;
-      }
-
-      const hashedpwd = await bcrypt.hash(data['password'], saltRounds);
-
-      // Creating a new instance of the Customers model with data from the request
-      const customer = new Customers({
-        user_name: data['user_name'],
-        age: data['age'],
-        password: hashedpwd,
-        email: data['email'],
-      });
-
-      // Saving the new customer to the MongoDB 'customers' collection
-      await customer.save();
-
-      res.status(201).send('Customer added successfully');
+    app.post('/api/add_customer', async (req, res) => {
+        const data = req.body;
+        console.log(data);
+    
+        const documents = await Customers.find({ user_name: data['user_name'] });
+        if (documents.length > 0) {
+            res.status(409).send('User already exists');
+            return;
+        }
+    
+        const hashedpwd = await bcrypt.hash(data['password'], saltRounds);
+        usersdic[data['user_name']] = { hashedpwd };
+    
+        // Creating a new instance of the Customers model with data from the request
+        const customer = new Customers({
+            user_name: data['user_name'],
+            age: data['age'],
+            password: hashedpwd,
+            email: data['email'],
+        });
+    
+        // Saving the new customer to the MongoDB 'customers' collection
+        await customer.save();
+    
+        res.status(201).send('Customer added successfully');
     });
-
+    
     // GET endpoint for the root URL, serving the home page
     app.get('/', async (req, res) => {
-      res.sendFile(path.join(__dirname, 'frontend', 'home.html'));
+        res.sendFile(path.join(__dirname, 'frontend', 'home.html'));
     });
-
+    
     // Function to authenticate JWT token
     function authenticateToken(req, res, next) {
-      const authHeader = req.headers['authorization'];
-      const token = authHeader && authHeader.split(' ')[1];
-
-      if (!token) {
-        return res.sendStatus(401);
-      }
-
-      jwt.verify(token, secretKey, (err, user) => {
-        if (err) {
-          return res.sendStatus(403);
+        const token = req.headers['authorization'];
+    
+        if (!token) {
+            res.sendStatus(401);
+            return;
         }
-
-        req.user = user;
-        next();
-      });
+    
+        jwt.verify(token, secretKey, (err, user) => {
+            if (err) {
+                res.sendStatus(403);
+                return;
+            }
+    
+            req.user = user;
+            next();
+        });
     }
-
-    // Start the server
+    
+    // Starting the server and listening on the specified port
     app.listen(port, () => {
-      console.log(`Server is running on http://localhost:${port}`);
+        console.log(`Server is running on http://localhost:${port}`);
     });
   })
   .catch((err) => {
